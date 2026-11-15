@@ -1,0 +1,99 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: #101219;
+  background: #fff;
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+}
+#root {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+.panel {
+  width: min(100%, 420px);
+  min-height: 580px;
+  padding: 24px;
+  border: 1px solid #d8d4e8;
+  border-radius: 21px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+}
+h1 {
+  margin: 20px 0 30px;
+  font-size: clamp(29px, 8vw, 42px);
+  line-height: 1.22;
+  letter-spacing: -.045em;
+  font-weight: 850;
+}
+.panel--home h1 { font-size: clamp(38px, 10vw, 54px); }
+.hero {
+  width: min(100%, 335px);
+  align-self: center;
+  margin: auto 0 18px;
+}
+button {
+  font: inherit;
+  font-weight: 800;
+  color: inherit;
+  cursor: pointer;
+}
+button:focus-visible { outline: 3px solid #5944a6; outline-offset: 3px; }
+.primary {
+  min-height: 64px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 20px;
+  background: #b61613;
+  color: #fff;
+  font-size: clamp(21px, 5.5vw, 30px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.arrow {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border: solid currentColor;
+  border-width: 3px 3px 0 0;
+  transform: rotate(45deg);
+}
+.notice {
+  align-self: center;
+  margin: 10px 0 0;
+  padding: 5px 22px;
+  border-radius: 100px;
+  background: #fff0a8;
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 800;
+}
+.choices { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.choice {
+  width: 100%;
+  min-height: 96px;
+  border: 1px solid #ccc9d2;
+  border-radius: 18px;
+  padding: 6px 18px 6px 10px;
+  display: grid;
+  grid-template-columns: minmax(58px, 90px) 1fr 12px;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  text-align: left;
+  font-size: clamp(20px, 5.4vw, 30px);
+  letter-spacing: -.045em;
+}
+.choice img { width: 100%; max-height: 78px; object-fit: contain; }
+.choice .arrow { color: #b61613; }
+.back { align-self: center; margin-top: auto; min-height: 44px; border: 0; background: white; text-decoration: underline; }
+.panel--selected .primary { margin-top: 24px; }
+@media (max-width: 360px) {
+  .panel { padding: 16px; min-height: 530px; }
+  .choice { min-height: 82px; }
+}
