@@ -5,6 +5,7 @@ import './styles.css';
 
 import { kiosks } from './kiosks.js';
 import Practice from './Practice.jsx';
+import { CafePractice, DaisoPractice } from './ShopPractice.jsx';
 
 function App() {
   const [screen, setScreen] = useState('home');
@@ -16,7 +17,7 @@ function App() {
   }, [screen]);
 
   return (
-    <main className={`panel panel--${screen}`}>
+    <main className={`panel panel--${screen}${screen === 'selected' && (kiosk === 0 || kiosk === 3) ? ' panel--shop' : ''}`}>
       {screen === 'home' ? (
         <>
           <h1>AI 키오스크<br />체험</h1>
@@ -46,7 +47,9 @@ function App() {
           <button className="back" onClick={() => setScreen('home')}>처음으로</button>
         </>
       ) : (
-        <Practice kiosk={kiosk} onExit={() => setScreen('choose')} />
+        kiosk === 0 || kiosk === 3 ? React.createElement(kiosk === 0 ? CafePractice : DaisoPractice, {
+          onExit: () => setScreen('choose'), onHome: () => setScreen('home'),
+        }) : <Practice kiosk={kiosk} onExit={() => setScreen('choose')} />
       )}
     </main>
   );
