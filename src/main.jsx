@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 import artwork from './artwork.js';
 import './styles.css';
 
-const kiosks = ['카페 주문', '햄버거 주문', '영화표 구매'];
+import { kiosks } from './kiosks.js';
+import Practice from './Practice.jsx';
 
 function App() {
   const [screen, setScreen] = useState('home');
@@ -11,7 +12,7 @@ function App() {
   const heading = useRef(null);
 
   useEffect(() => {
-    if (screen !== 'home') heading.current.focus();
+    heading.current?.focus();
   }, [screen]);
 
   return (
@@ -29,14 +30,14 @@ function App() {
         <>
           <h1 ref={heading} tabIndex={-1}>어떤 키오스크를<br />연습할까요?</h1>
           <ul className="choices">
-            {kiosks.map((label, index) => (
+            {kiosks.map(({ label, brand }, index) => (
               <li key={label}>
                 <button className="choice" onClick={() => {
-                  setKiosk(label);
+                  setKiosk(index);
                   setScreen('selected');
                 }}>
-                  <img src={artwork[index + 1]} alt="" />
-                  <span>{label}</span>
+                  {artwork[index + 1] ? <img src={artwork[index + 1]} alt="" /> : <span className="market-icon" aria-hidden="true">🛒</span>}
+                  <span>{label}<small>{brand}</small></span>
                   <span className="arrow" aria-hidden="true" />
                 </button>
               </li>
@@ -45,14 +46,11 @@ function App() {
           <button className="back" onClick={() => setScreen('home')}>처음으로</button>
         </>
       ) : (
-        <>
-          <h1 ref={heading} tabIndex={-1}>{kiosk}</h1>
-          <p className="notice">체험 화면은 준비 중이에요</p>
-          <button className="primary" onClick={() => setScreen('choose')}>다른 키오스크 고르기</button>
-        </>
+        <Practice kiosk={kiosk} onExit={() => setScreen('choose')} />
       )}
     </main>
   );
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+
