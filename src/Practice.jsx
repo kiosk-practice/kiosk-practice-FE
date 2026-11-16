@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { kiosks, products, seatLabels, burgers, burgerPrice, movies, ticketTypes } from './kiosks.js';
 import artwork from './artwork.js';
 import PracticeFrame from './PracticeFrame.jsx';
+import { useLearning } from './LearningAssistant.jsx';
 
 const won = (price) => price.toLocaleString('ko-KR') + '원';
 const reservedSeats = ['A3', 'A4', 'B4', 'C1', 'C2', 'D5', 'E6'];
@@ -79,6 +80,7 @@ export default function Practice({ kiosk, onExit }) {
     branded && step === checkout ? '결제 수단을 고른 뒤 모의 결제를 누르세요.' :
     step === review ? '내역을 확인하고 완료하기를 누르세요.' : undefined
   );
+  const learning = useLearning(brand, step, title, step === review, step === done);
   const header = <header className="practice-header"><strong>{brand}</strong><span className="practice-badge">연습용</span></header>;
   const footer = <>
       <button className="back" onClick={() => {
@@ -98,7 +100,8 @@ export default function Practice({ kiosk, onExit }) {
 
   return (
     <PracticeFrame className={branded ? `kiosk-flow ${cinema ? 'kiosk-cinema' : 'kiosk-burger'}` : 'practice-flow'}
-      header={header} step={step} count={done + 1} title={title} guide={guide} footer={footer}>
+      header={header} step={step} count={done + 1} title={title} guide={guide} footer={footer}
+      learning={learning} context={order} reviewing={step === review} completed={step === done}>
       {step === done && <div className="success-icon" aria-hidden="true">✓</div>}
 
       {cinema && step === 1 && (

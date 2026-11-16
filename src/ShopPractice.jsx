@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { drinks, goods, bags, won, cartTotal, goodsTotal, quantitiesMatch, addToCart } from './shopData.js';
 import PracticeFrame from './PracticeFrame.jsx';
+import { useLearning } from './LearningAssistant.jsx';
 import './shop.css';
 
 function Button({ children, secondary = false, ...props }) {
@@ -13,10 +14,11 @@ function Counter({ value, onChange, label, max = 99 }) {
 function Drink({ product }) {
   return <span className={`drink-art ${product.art}`} aria-hidden="true"><span>Ⅿ</span></span>;
 }
-function Frame({ brand, step, title, guide, children, footer }) {
+function Frame({ brand, step, title, guide, children, footer, learning, context }) {
   const header = <header className="shop-brand">{brand === 'cafe' ? <strong>▰ MEGA COFFEE<small>메가커피</small></strong> : <strong className="daiso-logo"><span>⠿</span> 다이소</strong>}<span className="practice-badge">연습용</span></header>;
   return <PracticeFrame className={`shop ${brand}`} header={header} step={step} count={8}
-    title={title} guide={guide} footer={footer}>{children}</PracticeFrame>;
+    title={title} guide={guide} footer={footer} learning={learning} context={context}
+    reviewing={step === 6} completed={step === 7}>{children}</PracticeFrame>;
 }
 function Completion({ name, onRestart, onExit, onHome }) {
   return <><div className="shop-success"><span>✓</span><h2>잘했어요!</h2><p>{name}<br />연습을 모두 완료했어요.</p></div><div className="shop-completion"><Button onClick={onExit}>다른 키오스크 연습하기 ❯</Button><Button secondary onClick={onRestart}>↻ 다시 연습하기</Button><Button secondary onClick={onHome}>⌂ 처음으로</Button></div></>;
@@ -35,8 +37,9 @@ export function CafePractice({ onExit, onHome }) {
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
   const filtered = drinks.filter((item) => category === '추천' ? [0, 1, 10].includes(item.id) : item.category === category);
   const titles = ['원하는 메뉴를 선택하세요', '옵션 선택', '수량 선택', '장바구니', '결제하기', '주문 확인', '주문 내역 돌아보기', '연습 완료'];
+  const learning = useLearning('메가커피', step, titles[step], step === 6, step === 7);
   const guides = ['메뉴판에서 원하는 상품을 누르고 다음으로 이동하세요.', '음료의 온도를 고르고 다음을 누르세요.', '수량을 확인하고 장바구니에 담으세요.', '주문 내역을 확인하고 결제하기를 누르세요.', '연습할 결제 수단을 선택하세요.', '주문 내용이 맞으면 결제하기(연습)를 누르세요.', '선택한 내용을 순서대로 돌아보세요.'];
-  function restart() { setStep(0); setCart([]); setSelected(null); setTemperature(''); setQuantity(1); setPayment(''); setCategory('커피'); setPage(0); }
+  function restart() { learning.reset(); setStep(0); setCart([]); setSelected(null); setTemperature(''); setQuantity(1); setPayment(''); setCategory('커피'); setPage(0); }
   function choose(product) { setSelected(product); setTemperature(product.category === '디저트' ? '기본' : ''); setQuantity(1); }
   const rows = (editable) => <div className="shop-receipt"><div className="receipt-head"><span>주문내역</span><span>수량 / 금액</span></div>{cart.map((item) => <div className="cart-row" key={item.key}><Drink product={item} /><strong>{item.name}<small>({item.temperature})</small></strong>{editable ? <Counter label={`${item.name} ${item.temperature} 수량`} value={item.quantity} max={99} onChange={(value) => setCart(cart.map((row) => row.key === item.key ? { ...row, quantity: value } : row))} /> : <span>{item.quantity}개</span>}<b>{won(item.price * item.quantity)}</b>{editable && <button className="remove-item" aria-label={`${item.name} ${item.temperature} 삭제`} onClick={() => setCart(cart.filter((row) => row.key !== item.key))}>×</button>}</div>)}</div>;
   let footer;
@@ -47,7 +50,8 @@ export function CafePractice({ onExit, onHome }) {
   if (step === 4) footer = <><Button secondary onClick={() => setStep(3)}>‹ 이전</Button><Button disabled={!payment} onClick={() => setStep(5)}>다음 ❯</Button></>;
   if (step === 5) footer = <><Button secondary onClick={() => setStep(4)}>‹ 이전</Button><Button onClick={() => setStep(6)}>결제하기(연습) ❯</Button></>;
   if (step === 6) footer = <><Button secondary onClick={restart}>↻ 다시 연습하기</Button><Button onClick={() => setStep(7)}>완료하기 ❯</Button></>;
-  return <Frame brand="cafe" step={step} title={titles[step]} guide={guides[step]} footer={footer}>
+  return <Frame brand="cafe" step={step} title={titles[step]} guide={guides[step]} footer={footer} learning={learning}
+    context={{ selected: selected?.name, temperature, quantity, cart: cart.map(({ name, temperature, quantity }) => ({ name, temperature, quantity })), payment }}>
     {step === 0 && <><nav className="menu-tabs" aria-label="메뉴 분류">{['추천', '커피', '음료', '티', '디저트'].map((tab) => <button key={tab} aria-pressed={category === tab} onClick={() => { setCategory(tab); setPage(0); }}>{tab}</button>)}</nav><div className="menu-grid">{filtered.slice(page * 9, page * 9 + 9).map((product) => <button key={product.id} aria-pressed={selected?.id === product.id} onClick={() => choose(product)}><Drink product={product} /><strong>{product.name}</strong><b>{won(product.price)}</b></button>)}</div><div className="menu-pages"><button aria-label="이전 메뉴 페이지" disabled={page === 0} onClick={() => setPage(page - 1)}>‹</button><span>{page + 1} / {Math.ceil(filtered.length / 9)}</span><button aria-label="다음 메뉴 페이지" disabled={(page + 1) * 9 >= filtered.length} onClick={() => setPage(page + 1)}>›</button></div></>}
     {(step === 1 || step === 2) && <><div className="selected-product"><Drink product={selected} /><div><h2>{selected.name}{step === 2 && ` (${temperature})`}</h2><b>{won(selected.price)}</b>{step === 1 && <p>원하는 옵션으로<br />주문해 보세요.</p>}</div></div>{step === 1 ? <><h2>온도<span className="red">(필수)</span></h2><div className="temperature-options">{['HOT', 'ICE'].map((option) => <button key={option} aria-pressed={temperature === option} onClick={() => setTemperature(option)}><span>{option === 'HOT' ? '♨' : '❄'}</span>{option}<small>{option === 'HOT' ? '(따뜻하게)' : '(차갑게)'}</small></button>)}</div></> : <><h2>수량을 선택하세요</h2><div className="large-counter"><Counter label="음료 수량" value={quantity} onChange={setQuantity} /></div><div className="shop-total">금액 <b>{won(selected.price * quantity)}</b></div></>}</>}
     {step === 3 && <>{cart.length ? rows(true) : <Hint>장바구니가 비어 있어요.<br />메뉴를 먼저 담아 주세요.</Hint>}<div className="shop-total">총 {count}개 <b>{won(total)}</b></div></>}
@@ -70,13 +74,14 @@ export function DaisoPractice({ onExit, onHome }) {
   const subtotal = goodsTotal(quantities);
   const total = subtotal + (bag?.price ?? 0);
   const titles = ['바코드 스캔 대기', '상품 스캔 (3개 담기)', '스캔 목록 확인', '오류 수정 (중복 제거)', '봉투(쇼핑백) 선택', '결제하기 (연습)', '거래 내용 확인', '연습 완료'];
+  const learning = useLearning('다이소', step, titles[step], step === 6, step === 7);
   const guides = ['상품의 바코드를 스캐너에 보여 주세요.', '아래 상품을 각각 눌러 스캔하세요.', '실제 바구니와 스캔 목록의 수량을 비교하세요.', '수세미 수량을 실제와 같은 2개로 수정하세요.', '필요한 봉투를 선택하세요.', '카드 넣기 버튼으로 모의 결제를 연습하세요.', '스캔부터 결제까지 연습한 내용을 확인하세요.'];
   useEffect(() => {
     if (!paying) return;
     const timer = setTimeout(() => { setPaying(false); setStep(6); }, 1000);
     return () => clearTimeout(timer);
   }, [paying]);
-  function restart() { setStep(0); setScanned([]); setQuantities([0, 0, 0]); setBag(null); setMessage(''); setPaying(false); }
+  function restart() { learning.reset(); setStep(0); setScanned([]); setQuantities([0, 0, 0]); setBag(null); setMessage(''); setPaying(false); }
   function scan(index) {
     if (scanned.includes(index)) return;
     setScanned([...scanned, index]);
@@ -91,7 +96,8 @@ export function DaisoPractice({ onExit, onHome }) {
   if (step === 4) footer = <><Button secondary onClick={() => setStep(3)}>‹ 이전</Button><Button disabled={!bag} onClick={() => setStep(5)}>다음 (결제하기) ❯</Button></>;
   if (step === 5) footer = <><Button secondary disabled={paying} onClick={() => setStep(4)}>‹ 이전</Button><Button disabled={paying} onClick={() => setPaying(true)}>{paying ? '결제 연습 중…' : '카드 넣기 (연습)'}</Button></>;
   if (step === 6) footer = <><Button secondary onClick={restart}>↻ 다시 연습하기</Button><Button onClick={() => setStep(7)}>다음 (완료하기) ❯</Button></>;
-  return <Frame brand="daiso" step={step} title={titles[step]} guide={guides[step]} footer={footer}>
+  return <Frame brand="daiso" step={step} title={titles[step]} guide={guides[step]} footer={footer} learning={learning}
+    context={{ scanned: scanned.map((i) => goods[i].name), quantities, bag: bag?.name, corrected, message }}>
     {step === 0 && <><div className="scanner-art" aria-hidden="true"><div><span /><b>▥▥▥</b></div></div><section className="shop-receipt"><h2>연습할 상품 (총 3가지)</h2>{list(goods.map((item) => item.actual))}</section></>}
     {step === 1 && <><div className="scan-products">{goods.map((item, i) => <button key={item.name} disabled={scanned.includes(i)} onClick={() => scan(i)}><span className="goods-icon">{item.icon}</span><strong>{item.name}<small>{won(item.price)}</small></strong><b>{scanned.includes(i) ? '✓ 스캔됨' : '스캔하기'}</b></button>)}</div><section className="shop-receipt"><h2>스캔된 상품 ({scanned.length}/3가지)</h2>{list(quantities)}</section><p role="status">{scanned.length === 3 ? '스캔 완료! 실제 수량과 비교해 보세요.' : '아직 스캔하지 않은 상품을 눌러주세요.'}</p></>}
     {step === 2 && <><div className="compare-lists"><section className="shop-receipt"><h2>실제 바구니</h2>{list(goods.map((item) => item.actual))}</section><section className="shop-receipt"><h2>스캔한 목록</h2>{list(quantities)}</section></div><p className="pink-hint">두 목록이 같나요?</p>{message && <p className="error-message" role="alert">{message}</p>}</>}

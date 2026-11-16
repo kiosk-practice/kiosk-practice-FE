@@ -1,0 +1,20 @@
+.learning-assistant { margin: 18px 0; padding: 14px; border: 1px solid #d8d0ff; border-radius: 18px; background: #f7f5ff; color: #23184b; text-align: left; font-size: 18px; line-height: 1.6; }
+.learning-assistant button, .learning-report button { min-height: 48px; border: 1px solid #b4a5e6; border-radius: 12px; padding: 10px 14px; background: white; color: #443184; font-size: 18px; }
+.learning-assistant .learning-toggle { width: 100%; background: #6041ca; color: white; border: 0; font-size: 21px; }
+.learning-assistant h2 { margin: 10px 0; font-size: 22px; }
+.learning-panel { margin-top: 12px; }
+.learning-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.learning-heading button { flex-shrink: 0; }
+.learning-assistant .learning-answer { white-space: pre-line; padding: 16px; background: #fff3c8; border-radius: 14px; font-size: 20px; overflow-wrap: anywhere; }
+.learning-assistant .learning-note { font-size: 15px; color: #574f6d; margin: 12px 0; }
+.learning-question { overflow-wrap: anywhere; }
+.learning-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.learning-stats { display: flex; gap: 14px; margin-bottom: 10px; }
+.learning-stats span { background: white; padding: 10px; border-radius: 12px; flex: 1; font-size: 15px; }
+.learning-stats b { display: block; font-size: 26px; color: #6041ca; }
+.learning-highlight { outline: 4px solid #6941db !important; outline-offset: 4px; box-shadow: 0 0 0 8px #e8deff !important; }
+.learning-report { text-align: left; line-height: 1.6; }
+.learning-report h1 { font-size: 32px; }
+.learning-report ul { list-style: none; padding: 0; }
+.learning-report li { padding: 14px; margin: 10px 0; background: #f5f2ff; border-radius: 12px; }
+.learning-report small { display: block; }

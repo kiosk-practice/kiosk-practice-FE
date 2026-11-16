@@ -214,7 +214,6 @@ button:disabled { cursor: default; opacity: .55; }
 .frame-content { display: flex; flex: 1; flex-direction: column; gap: 12px; padding-bottom: 16px; }
 .frame-guide { margin: 0; border-radius: 12px; background: var(--yellow); padding: 12px; text-align: left; font-size: 17px; line-height: 1.45; }
 .frame-guide strong { display: block; margin-bottom: 3px; }
-.frame-ai-button { align-self: flex-end; min-height: 44px; padding: 6px 12px; border: 1px solid #d8d4e8; border-radius: 12px; background: #f4f1fa; color: #493887; font-size: 16px; }
 .frame-content .menu-tabs { margin-top: 0; }
 .frame-footer { display: flex; gap: 10px; padding-bottom: 16px; }
 .frame-footer:empty { display: none; }
