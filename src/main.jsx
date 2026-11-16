@@ -6,6 +6,7 @@ import './styles.css';
 import { kiosks } from './kiosks.js';
 import Practice from './Practice.jsx';
 import { CafePractice, DaisoPractice } from './ShopPractice.jsx';
+import { LearningReport } from './LearningAssistant.jsx';
 
 function App() {
   const [screen, setScreen] = useState('home');
@@ -26,8 +27,9 @@ function App() {
             체험 시작하기 <span className="arrow" aria-hidden="true" />
           </button>
           <p className="notice">실제 결제는 없습니다</p>
+          <button className="back" onClick={() => setScreen('report')}>나의 학습 리포트</button>
         </>
-      ) : screen === 'choose' ? (
+      ) : screen === 'report' ? <LearningReport onBack={() => setScreen('home')} /> : screen === 'choose' ? (
         <>
           <h1 ref={heading} tabIndex={-1}>어떤 키오스크를<br />연습할까요?</h1>
           <ul className="choices">

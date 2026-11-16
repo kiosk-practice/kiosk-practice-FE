@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { drinks, goods, bags, won, cartTotal, goodsTotal, quantitiesMatch, addToCart } from './shopData.js';
 import './shop.css';
+import LearningAssistant, { useLearning } from './LearningAssistant.jsx';
 
 function Button({ children, secondary = false, ...props }) {
   return <button className={`shop-button${secondary ? ' secondary' : ''}`} {...props}>{children}</button>;
@@ -12,14 +13,14 @@ function Counter({ value, onChange, label, max = 99 }) {
 function Drink({ product }) {
   return <span className={`drink-art ${product.art}`} aria-hidden="true"><span>Ⅿ</span></span>;
 }
-function Frame({ brand, step, title, children, footer }) {
+function Frame({ brand, step, title, children, footer, learning, guide, context }) {
   const heading = useRef(null);
   useEffect(() => { heading.current?.focus(); }, [step]);
-  return <section className={`shop ${brand}`}>
+  return <section ref={learning.root} className={`shop ${brand}`}>
     <header className="shop-brand">{brand === 'cafe' ? <strong>▰ MEGA COFFEE<small>메가커피</small></strong> : <strong className="daiso-logo"><span>⠿</span> 다이소</strong>}<span className="practice-badge">연습용</span></header>
     <div className="shop-title"><h1 ref={heading} tabIndex={-1}>{brand === 'daiso' && <b>{step + 1}/8</b>}{title}</h1></div>
     {brand === 'daiso' && <div className="shop-progress" aria-label={`${step + 1}/8 단계`}>{Array.from({ length: 8 }, (_, i) => <i key={i} className={i === step ? 'active' : ''} />)}</div>}
-    <div className="shop-content">{children}</div><footer className="shop-footer">{footer}</footer>
+    <div className="shop-content">{children}<LearningAssistant learning={learning} step={step} title={title} guide={guide} context={context} reviewing={step === 6} completed={step === 7} /></div><footer className="shop-footer">{footer}</footer>
   </section>;
 }
 function Completion({ name, onRestart, onExit, onHome }) {
@@ -38,8 +39,10 @@ export function CafePractice({ onExit, onHome }) {
   const total = cartTotal(cart);
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
   const filtered = drinks.filter((item) => category === '추천' ? [0, 1, 10].includes(item.id) : item.category === category);
-  const titles = ['원하는 메뉴를 선택하세요', '옵션 선택', '수량 선택', '장바구니', '결제하기', '주문 확인', 'AI 해설 예시', '연습 완료'];
-  function restart() { setStep(0); setCart([]); setSelected(null); setTemperature(''); setQuantity(1); setPayment(''); setCategory('커피'); setPage(0); }
+  const titles = ['원하는 메뉴를 선택하세요', '옵션 선택', '수량 선택', '장바구니', '결제하기', '주문 확인', '연습 돌아보기', '연습 완료'];
+  const learning = useLearning('메가커피', step, titles[step], step === 6, step === 7);
+  const guides = ['원하는 음료나 디저트를 누르고 다음을 눌러요. 메뉴 분류를 누르면 다른 종류를 볼 수 있어요.', 'HOT은 따뜻하게, ICE는 차갑게예요. 원하는 온도를 고른 뒤 다음을 눌러요.', '더하기와 빼기로 수량을 바꾸고 장바구니 담기를 눌러요.', '메뉴와 수량, 합계를 확인해요. 비어 있다면 메뉴 더 담기를, 주문이 맞으면 결제하기를 눌러요.', '결제 방법 하나를 선택한 뒤 다음을 눌러요. 실제 카드 정보는 필요 없어요.', '주문과 합계를 확인하고 결제하기(연습)를 눌러요. 실제 결제는 없어요.', '모의 결제를 마쳤어요. 선택한 내역을 확인하고 완료하기를 누르면 학습 기록이 저장돼요.', '카페 연습을 완료했어요. 다시 연습하거나 다른 키오스크를 선택할 수 있어요.'];
+  function restart() { learning.reset(); setStep(0); setCart([]); setSelected(null); setTemperature(''); setQuantity(1); setPayment(''); setCategory('커피'); setPage(0); }
   function choose(product) { setSelected(product); setTemperature(product.category === '디저트' ? '기본' : ''); setQuantity(1); }
   const rows = (editable) => <div className="shop-receipt"><div className="receipt-head"><span>주문내역</span><span>수량 / 금액</span></div>{cart.map((item) => <div className="cart-row" key={item.key}><Drink product={item} /><strong>{item.name}<small>({item.temperature})</small></strong>{editable ? <Counter label={`${item.name} ${item.temperature} 수량`} value={item.quantity} max={99} onChange={(value) => setCart(cart.map((row) => row.key === item.key ? { ...row, quantity: value } : row))} /> : <span>{item.quantity}개</span>}<b>{won(item.price * item.quantity)}</b>{editable && <button className="remove-item" aria-label={`${item.name} ${item.temperature} 삭제`} onClick={() => setCart(cart.filter((row) => row.key !== item.key))}>×</button>}</div>)}</div>;
   let footer;
@@ -50,7 +53,7 @@ export function CafePractice({ onExit, onHome }) {
   if (step === 4) footer = <><Button secondary onClick={() => setStep(3)}>‹ 이전</Button><Button disabled={!payment} onClick={() => setStep(5)}>다음 ❯</Button></>;
   if (step === 5) footer = <><Button secondary onClick={() => setStep(4)}>‹ 이전</Button><Button onClick={() => setStep(6)}>결제하기(연습) ❯</Button></>;
   if (step === 6) footer = <><Button secondary onClick={restart}>↻ 다시 연습하기</Button><Button onClick={() => setStep(7)}>완료하기 ❯</Button></>;
-  return <Frame brand="cafe" step={step} title={titles[step]} footer={footer}>
+  return <Frame brand="cafe" step={step} title={titles[step]} footer={footer} learning={learning} guide={guides[step]} context={{ selected: selected?.name, temperature, quantity, cart: cart.map(({ name, temperature, quantity }) => ({ name, temperature, quantity })), payment }}>
     {step === 0 && <><nav className="menu-tabs" aria-label="메뉴 분류">{['추천', '커피', '음료', '티', '디저트'].map((tab) => <button key={tab} aria-pressed={category === tab} onClick={() => { setCategory(tab); setPage(0); }}>{tab}</button>)}</nav><div className="menu-grid">{filtered.slice(page * 9, page * 9 + 9).map((product) => <button key={product.id} aria-pressed={selected?.id === product.id} onClick={() => choose(product)}><Drink product={product} /><strong>{product.name}</strong><b>{won(product.price)}</b></button>)}</div><div className="menu-pages"><button aria-label="이전 메뉴 페이지" disabled={page === 0} onClick={() => setPage(page - 1)}>‹</button><span>{page + 1} / {Math.ceil(filtered.length / 9)}</span><button aria-label="다음 메뉴 페이지" disabled={(page + 1) * 9 >= filtered.length} onClick={() => setPage(page + 1)}>›</button></div></>}
     {(step === 1 || step === 2) && <><div className="selected-product"><Drink product={selected} /><div><h2>{selected.name}{step === 2 && ` (${temperature})`}</h2><b>{won(selected.price)}</b>{step === 1 && <p>원하는 옵션으로<br />주문해 보세요.</p>}</div></div>{step === 1 ? <><h2>온도<span className="red">(필수)</span></h2><div className="temperature-options">{['HOT', 'ICE'].map((option) => <button key={option} aria-pressed={temperature === option} onClick={() => setTemperature(option)}><span>{option === 'HOT' ? '♨' : '❄'}</span>{option}<small>{option === 'HOT' ? '(따뜻하게)' : '(차갑게)'}</small></button>)}</div><Hint>음료 온도를 선택한 후<br />‘다음’ 버튼을 눌러주세요.</Hint></> : <><h2>수량을 선택하세요</h2><div className="large-counter"><Counter label="음료 수량" value={quantity} onChange={setQuantity} /></div><div className="shop-total">금액 <b>{won(selected.price * quantity)}</b></div><Hint>수량을 확인한 후<br />‘장바구니 담기’를 눌러주세요.</Hint></>}</>}
     {step === 3 && <>{cart.length ? rows(true) : <Hint>장바구니가 비어 있어요.<br />메뉴를 먼저 담아 주세요.</Hint>}<div className="shop-total">총 {count}개 <b>{won(total)}</b></div><Hint>주문이 맞으면 ‘결제하기’를 눌러주세요.</Hint></>}
@@ -73,12 +76,14 @@ export function DaisoPractice({ onExit, onHome }) {
   const subtotal = goodsTotal(quantities);
   const total = subtotal + (bag?.price ?? 0);
   const titles = ['바코드 스캔 대기', '상품 스캔 (3개 담기)', '스캔 목록 확인', '오류 수정 (중복 제거)', '봉투(쇼핑백) 선택', '결제하기 (연습)', '거래 내용 확인', '연습 완료'];
+  const learning = useLearning('다이소', step, titles[step], step === 6, step === 7);
+  const guides = ['바코드 스캔 시작을 눌러 연습해요.', '아직 스캔하지 않은 상품 버튼을 하나씩 누른 뒤 다음을 눌러요.', '실제 바구니와 스캔한 목록을 비교해요. 수량이 다르면 아니요(수정할게요)를 눌러요.', '수세미는 2개, 테이프와 건전지는 각 1개가 맞아요. 수량 옆 빼기나 더하기로 맞춘 뒤 수정 완료를 눌러요.', '필요한 봉투나 봉투 없음을 고른 뒤 다음을 눌러요.', '합계를 확인하고 카드 넣기(연습)를 눌러요. 실제 카드나 개인정보는 필요 없어요.', '거래 내용을 확인하고 다음(완료하기)을 누르면 기록이 저장돼요.', '셀프계산 연습을 완료했어요. 다시 연습하거나 다른 키오스크를 선택할 수 있어요.'];
   useEffect(() => {
     if (!paying) return;
     const timer = setTimeout(() => { setPaying(false); setStep(6); }, 1000);
     return () => clearTimeout(timer);
   }, [paying]);
-  function restart() { setStep(0); setScanned([]); setQuantities([0, 0, 0]); setBag(null); setMessage(''); setPaying(false); }
+  function restart() { learning.reset(); setStep(0); setScanned([]); setQuantities([0, 0, 0]); setBag(null); setMessage(''); setPaying(false); }
   function scan(index) {
     if (scanned.includes(index)) return;
     setScanned([...scanned, index]);
@@ -93,14 +98,14 @@ export function DaisoPractice({ onExit, onHome }) {
   if (step === 4) footer = <><Button secondary onClick={() => setStep(3)}>‹ 이전</Button><Button disabled={!bag} onClick={() => setStep(5)}>다음 (결제하기) ❯</Button></>;
   if (step === 5) footer = <><Button secondary disabled={paying} onClick={() => setStep(4)}>‹ 이전</Button><Button disabled={paying} onClick={() => setPaying(true)}>{paying ? '결제 연습 중…' : '카드 넣기 (연습)'}</Button></>;
   if (step === 6) footer = <><Button secondary onClick={restart}>↻ 다시 연습하기</Button><Button onClick={() => setStep(7)}>다음 (완료하기) ❯</Button></>;
-  return <Frame brand="daiso" step={step} title={titles[step]} footer={footer}>
+  return <Frame brand="daiso" step={step} title={titles[step]} footer={footer} learning={learning} guide={guides[step]} context={{ scanned: scanned.map((i) => goods[i].name), quantities, bag: bag?.name, corrected, message }}>
     {step === 0 && <><Hint>상품의 바코드를<br />스캐너에 보여 주세요.</Hint><div className="scanner-art" aria-hidden="true"><div><span /><b>▥▥▥</b></div></div><section className="shop-receipt"><h2>연습할 상품 (총 3가지)</h2>{list(goods.map((item) => item.actual))}</section></>}
     {step === 1 && <><Hint>상품 3가지를 모두 스캔해 주세요.<small>아래 상품을 눌러 스캔을 연습해요.</small></Hint><div className="scan-products">{goods.map((item, i) => <button key={item.name} disabled={scanned.includes(i)} onClick={() => scan(i)}><span className="goods-icon">{item.icon}</span><strong>{item.name}<small>{won(item.price)}</small></strong><b>{scanned.includes(i) ? '✓ 스캔됨' : '스캔하기'}</b></button>)}</div><section className="shop-receipt"><h2>스캔된 상품 ({scanned.length}/3가지)</h2>{list(quantities)}</section><p role="status">{scanned.length === 3 ? '스캔 완료! 실제 수량과 비교해 보세요.' : '아직 스캔하지 않은 상품을 눌러주세요.'}</p></>}
     {step === 2 && <><Hint>바구니의 실제 상품과<br />스캔한 목록이 같은지 확인해 주세요.</Hint><div className="compare-lists"><section className="shop-receipt"><h2>실제 바구니</h2>{list(goods.map((item) => item.actual))}</section><section className="shop-receipt"><h2>스캔한 목록</h2>{list(quantities)}</section></div><p className="pink-hint">두 목록이 같나요?</p>{message && <p className="error-message" role="alert">{message}</p>}</>}
     {step === 3 && <><Hint>수세미가 중복으로 담겼어요.<br />실제 수량인 2개로 수정해 주세요.</Hint><section className="shop-receipt"><h2>스캔한 상품 목록 (수정 가능)</h2>{list(quantities, true)}</section><section className="shop-receipt correct-list"><h2>올바른 수량</h2>{list(goods.map((item) => item.actual))}</section><p role="status">{corrected ? '✓ 실제 상품과 수량이 같아요!' : '모든 상품을 실제 수량과 맞춰 주세요.'}</p><div className="shop-total">합계 ({quantities.reduce((a, b) => a + b, 0)}개) <b>{won(subtotal)}</b></div></>}
     {step === 4 && <><Hint>필요한 봉투를 선택해 주세요.</Hint><div className="bag-options">{bags.map((item) => <button key={item.name} aria-pressed={bag?.name === item.name} onClick={() => setBag(item)}><span className="radio-dot" /><span className="goods-icon">{item.icon}</span><strong>{item.name}<small>{item.price ? won(item.price) : '(직접 가져갈게요)'}</small></strong></button>)}</div><div className="shop-total">상품 합계 <strong>{won(subtotal)}</strong></div><div className="shop-total">결제할 금액 <b>{won(total)}</b></div></>}
     {step === 5 && <><Hint>카드로 결제하는 연습을 해보세요.<small>실제 결제는 되지 않습니다.</small></Hint><section className="shop-receipt"><h2>결제 내용</h2><div className="shop-total">상품 금액 (4개)<strong>{won(subtotal)}</strong></div><div className="shop-total">{bag.name}<strong>{won(bag.price)}</strong></div><div className="shop-total">최종 결제금액<b>{won(total)}</b></div></section><div className="practice-terminal"><h2>카드 결제 (연습용)</h2><p>아래 버튼을 눌러<br />카드를 넣는 연습을 해요.</p><div className="terminal-art" aria-hidden="true"><span>💳</span></div><p role="status">{paying ? '결제 연습 중…' : '카드나 개인정보가 필요하지 않아요.'}</p></div></>}
-    {step === 6 && <><Hint>AI 해설 예시</Hint><div className="feedback-success"><h2>✓ 거의 다 했어요!</h2><p>선택 기록을 바탕으로<br />오늘의 연습을 돌아봐요.</p></div><section className="shop-receipt"><h2>이번 연습 결과</h2><ul className="review-list"><li>✓ 상품 3가지 스캔 완료</li><li>✓ 실제 바구니와 목록 비교</li><li>✓ 수세미 3개 → 2개 수정</li><li>✓ {bag.name} ({won(bag.price)})</li><li>✓ 카드 결제 연습: {won(total)}</li></ul></section><p className="pink-hint">처음에는 수세미가 중복 스캔됐지만,<br />수량을 2개로 잘 수정했어요!</p></>}
+    {step === 6 && <><Hint>거래 내용 돌아보기</Hint><div className="feedback-success"><h2>✓ 거의 다 했어요!</h2><p>선택 기록을 바탕으로<br />오늘의 연습을 돌아봐요.</p></div><section className="shop-receipt"><h2>이번 연습 결과</h2><ul className="review-list"><li>✓ 상품 3가지 스캔 완료</li><li>✓ 실제 바구니와 목록 비교</li><li>✓ 수세미 3개 → 2개 수정</li><li>✓ {bag.name} ({won(bag.price)})</li><li>✓ 카드 결제 연습: {won(total)}</li></ul></section><p className="pink-hint">처음에는 수세미가 중복 스캔됐지만,<br />수량을 2개로 잘 수정했어요!</p></>}
     {step === 7 && <Completion name="다이소 셀프계산대" onRestart={restart} onExit={onExit} onHome={onHome} />}
     {step > 0 && step < 7 && <button className="shop-home" disabled={paying} onClick={onHome}>⌂ 처음으로</button>}
   </Frame>;
