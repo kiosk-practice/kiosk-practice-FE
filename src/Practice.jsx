@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { kiosks, products, seatLabels, isAdjacentPair, burgers, burgerPrice, movies, ticketTypes } from './kiosks.js';
 import artwork from './artwork.js';
+import LearningAssistant, { useLearning } from './LearningAssistant.jsx';
 
 const won = (price) => price.toLocaleString('ko-KR') + '원';
 const reservedSeats = ['A3', 'A4', 'B4', 'C1', 'C2', 'D5', 'E6'];
@@ -109,7 +110,7 @@ export default function Practice({ kiosk, onExit }) {
   const help = current?.help ?? (branded && step === payment ? '내역과 합계를 확인한 뒤 결제로 이동하세요.' :
     branded && step === checkout ? '결제 방법을 고른 뒤 모의 결제를 눌러요. 카드나 개인정보는 필요 없어요.' : step === payment ?
     '주문 내용을 확인한 뒤 카드 넣기 연습을 눌러요. 카드나 개인정보는 필요 없어요.' :
-    'AI 해설 예시에서 미션과 다른 선택을 보고 해당 단계만 다시 연습할 수 있어요.');
+    '미션과 다른 선택을 확인하고 해당 단계만 다시 연습할 수 있어요.');
   const orderLines = steps.flatMap(({ options }, i) =>
     options && order[i] && !(single && i > 2) ? [order[i]] : []);
   if (cinema && seats.length) orderLines.push(seats.join(', '));
@@ -118,9 +119,10 @@ export default function Practice({ kiosk, onExit }) {
   const phase = cinema ? step : step < 2 ? step : step < payment ? 2 : step - payment + 3;
   const visiblePhases = cinema ? (step < 4 ? phases.slice(0, 4) : phases.slice(4)) : phases;
   const paymentMethods = cinema ? ['신용카드', '간편결제', '상품권'] : ['카드 결제', '모바일 결제'];
+  const learning = useLearning(brand, step, title, step === review, step === done);
 
   return (
-    <div className={branded ? `kiosk-flow ${cinema ? 'kiosk-cinema' : 'kiosk-burger'}` : 'practice-flow'}>
+    <div ref={learning.root} className={branded ? `kiosk-flow ${cinema ? 'kiosk-cinema' : 'kiosk-burger'}` : 'practice-flow'}>
       <header className="practice-header">
         <strong>{brand}</strong>
         {branded ? <span>연습용</span> : step < done && <span>진행 {step + 1} / {review + 1}</span>}
@@ -268,7 +270,7 @@ export default function Practice({ kiosk, onExit }) {
       )}
       {step === review && (issue || branded) && (
         <section className="mission feedback">
-          <h2>AI 해설 예시</h2>
+          <h2>미션 확인</h2>
           {issue ? <>
             <p>{issue.title}에서 <strong>{issue.picked}</strong>을(를) 골랐어요.</p>
             <p>미션에 맞게 <strong>{issue.target}</strong>을(를) 골라 보세요.</p>
@@ -277,12 +279,8 @@ export default function Practice({ kiosk, onExit }) {
       )}
       {step === done && <p className="success-banner">✓ 미션을 완료했어요</p>}
 
-      {step < done && (
-        <details className="help" key={step}>
-          <summary>이 화면이 헷갈려요</summary>
-          <p>{help}</p>
-        </details>
-      )}
+      <LearningAssistant learning={learning} step={step} title={title} guide={help}
+        context={{ mission, order, differences: changes }} reviewing={step === review} completed={step === done} />
       {step < payment && <button className="primary" disabled={!canAdvance} onClick={advance}>{retry ? '선택 수정하기' : '다음'}</button>}
       {step === payment && <button className="primary" onClick={() => branded && retry ? advance() : setStep(branded ? checkout : review)}>
         {branded ? (retry ? '선택 수정하기' : '결제로 이동') : '카드 넣기 연습'}
