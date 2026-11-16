@@ -125,7 +125,7 @@ export default function LearningAssistant({ learning, step, title, guide, contex
   function follow() {
     close();
     const root = learning.root.current;
-    const next = root?.querySelector('.shop-footer .shop-button:not(.secondary):not(:disabled), .primary:not(:disabled)');
+    const next = root?.querySelector('.frame-footer .shop-button:not(.secondary):not(:disabled), .primary:not(:disabled)');
     const choices = root?.querySelector('.menu-grid, .temperature-options, .large-counter, .payment-options, .bag-options, .scan-products, .goods-list, .choices, .ticket-list, .seats');
     clearHighlight();
     const target = next || choices;
@@ -148,7 +148,7 @@ export default function LearningAssistant({ learning, step, title, guide, contex
     </section>}
     {idle && !open && !resultView && <p role="status">천천히 해도 괜찮아요. 막히면 도움말을 눌러보세요.</p>}
     <button ref={trigger} className="learning-toggle" aria-expanded={open} onClick={() => { if (open) close(); else { setOpen(true); setIdle(false); if (!resultView) learning.help(); } }}>
-      <span aria-hidden="true">🤖</span> {resultView ? 'AI 학습 피드백' : 'AI 도움말'}
+      <span aria-hidden="true">🤖</span> {resultView ? 'AI 학습 피드백' : 'AI에게 물어보기'}
     </button>
     {inspect && <p role="status">궁금한 버튼을 눌러주세요. 설명할 버튼만 선택되며 주문은 바뀌지 않아요. <button onClick={() => setInspect(false)}>설명 선택 취소</button></p>}
     {open && <section ref={panel} tabIndex={-1} className="learning-panel" aria-label={resultView ? '학습 피드백' : '현재 화면 도움말'} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>

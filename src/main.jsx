@@ -18,7 +18,7 @@ function App() {
   }, [screen]);
 
   return (
-    <main className={`panel panel--${screen}${screen === 'selected' && (kiosk === 0 || kiosk === 3) ? ' panel--shop' : ''}`}>
+    <main className={`panel panel--${screen}`}>
       {screen === 'home' ? (
         <>
           <h1>AI 키오스크<br />체험</h1>

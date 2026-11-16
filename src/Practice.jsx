@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { kiosks, products, seatLabels, isAdjacentPair, burgers, burgerPrice, movies, ticketTypes } from './kiosks.js';
+import React, { useState } from 'react';
+import { kiosks, products, seatLabels, burgers, burgerPrice, movies, ticketTypes } from './kiosks.js';
 import artwork from './artwork.js';
-import LearningAssistant, { useLearning } from './LearningAssistant.jsx';
+import PracticeFrame from './PracticeFrame.jsx';
+import { useLearning } from './LearningAssistant.jsx';
 
 const won = (price) => price.toLocaleString('ko-KR') + '원';
 const reservedSeats = ['A3', 'A4', 'B4', 'C1', 'C2', 'D5', 'E6'];
@@ -20,11 +21,9 @@ function Counter({ label, value, max, min = 0, onChange }) {
 
 export default function Practice({ kiosk, onExit }) {
   const scenario = kiosks[kiosk];
-  const { brand, mission, steps, total } = scenario;
+  const { brand, steps, total } = scenario;
   const [step, setStep] = useState(0);
   const [order, setOrder] = useState({});
-  const [retry, setRetry] = useState(false);
-  const heading = useRef(null);
   const market = kiosk === 3;
   const burger = kiosk === 1;
   const cinema = kiosk === 2;
@@ -45,33 +44,6 @@ export default function Practice({ kiosk, onExit }) {
   const date = order.date ?? showDates[0];
   const ticketSummary = ticketTypes.flatMap(({ name }, i) => tickets[i] ? [name + ' ' + tickets[i] + '명'] : []).join(' · ');
   const single = burger && order[2] === '단품';
-  const changes = steps.flatMap(({ target, title }, i) => {
-    if (!target || (single && i > 2) || !order[i] || target === order[i]) return [];
-    return [{ step: i, title, picked: order[i], target }];
-  });
-  if (cinema && seatCount && seatCount !== 2) {
-    changes.push({ step: 2, title: '관람 인원', picked: seatCount + '명', target: '2명' });
-  }
-  if (cinema && seatCount === 2 && !isAdjacentPair(seats)) {
-    changes.push({ step: 3, title: steps[3].title, picked: seats.join(', '), target: '같은 줄, 같은 통로 쪽의 이웃한 두 좌석' });
-  }
-  if (burger && quantity !== 1) {
-    changes.push({ step: payment, title: '주문 수량', picked: quantity + '개', target: '1개' });
-  }
-  if (market) {
-    products.forEach(({ name }, i) => {
-      if (quantities[i] !== undefined && quantities[i] !== 1) {
-        changes.push({ step: 1, title: name, picked: quantities[i] + '개', target: '1개' });
-      }
-    });
-  }
-  changes.sort((a, b) => a.step - b.step);
-  const issue = changes[0];
-
-  useEffect(() => {
-    heading.current?.focus();
-  }, [step]);
-
   function select(nextValue) {
     setOrder((previous) => ({ ...previous, [step]: nextValue }));
   }
@@ -88,15 +60,6 @@ export default function Practice({ kiosk, onExit }) {
   }
 
   function advance() {
-    if (retry) {
-      setRetry(false);
-      if ((cinema && seats.length !== seatCount) || (burger && !single && !order[5])) {
-        setStep(3);
-        return;
-      }
-      setStep(review);
-      return;
-    }
     setStep(single && step === 2 ? payment : step + 1);
   }
 
@@ -107,34 +70,39 @@ export default function Practice({ kiosk, onExit }) {
   const title = current?.title ?? (step === payment ? (cinema ? '예매 내용을 확인하세요' : burger ? '장바구니를 확인하세요' : '장바구니와 결제') :
     branded && step === checkout ? '결제 방법을 선택하세요' :
     step === review ? (market ? '연습 영수증' : '내 주문 돌아보기') : '잘했어요!');
-  const help = current?.help ?? (branded && step === payment ? '내역과 합계를 확인한 뒤 결제로 이동하세요.' :
-    branded && step === checkout ? '결제 방법을 고른 뒤 모의 결제를 눌러요. 카드나 개인정보는 필요 없어요.' : step === payment ?
-    '주문 내용을 확인한 뒤 카드 넣기 연습을 눌러요. 카드나 개인정보는 필요 없어요.' :
-    '미션과 다른 선택을 확인하고 해당 단계만 다시 연습할 수 있어요.');
   const orderLines = steps.flatMap(({ options }, i) =>
     options && order[i] && !(single && i > 2) ? [order[i]] : []);
   if (cinema && seats.length) orderLines.push(seats.join(', '));
-  const phases = cinema ? ['영화', '회차', '인원', '좌석', '예매 확인', '결제', '해설', '완료'] :
-    ['주문 방식', '메뉴', '옵션', '주문 확인', '결제', '해설', '완료'];
-  const phase = cinema ? step : step < 2 ? step : step < payment ? 2 : step - payment + 3;
-  const visiblePhases = cinema ? (step < 4 ? phases.slice(0, 4) : phases.slice(4)) : phases;
   const paymentMethods = cinema ? ['신용카드', '간편결제', '상품권'] : ['카드 결제', '모바일 결제'];
+
+  const guide = current?.help ?? (
+    step === payment ? '선택한 내용과 합계를 확인하세요.' :
+    branded && step === checkout ? '결제 수단을 고른 뒤 모의 결제를 누르세요.' :
+    step === review ? '내역을 확인하고 완료하기를 누르세요.' : undefined
+  );
   const learning = useLearning(brand, step, title, step === review, step === done);
+  const header = <header className="practice-header"><strong>{brand}</strong><span className="practice-badge">연습용</span></header>;
+  const footer = <>
+      <button className="back" onClick={() => {
+        if (step > 0 && step < review) {
+          setStep(single && step === payment ? 2 : step - 1);
+        } else {
+          onExit();
+        }
+      }}>{step > 0 && step < review ? '이전 단계' : '다른 키오스크 연습하기'}</button>
+      {step < payment && <button className="primary" disabled={!canAdvance} onClick={advance}>다음</button>}
+      {step === payment && <button className="primary" onClick={() => setStep(branded ? checkout : review)}>
+        {branded ? '결제로 이동' : '카드 넣기 연습'}
+      </button>}
+      {branded && step === checkout && <button className="primary" disabled={!order.method} onClick={() => setStep(review)}>모의 결제</button>}
+      {step === review && <button className="primary" onClick={() => setStep(done)}>완료하기</button>}
+  </>;
 
   return (
-    <div ref={learning.root} className={branded ? `kiosk-flow ${cinema ? 'kiosk-cinema' : 'kiosk-burger'}` : 'practice-flow'}>
-      <header className="practice-header">
-        <strong>{brand}</strong>
-        {branded ? <span>연습용</span> : step < done && <span>진행 {step + 1} / {review + 1}</span>}
-      </header>
-      {branded && (
-        <ol className="kiosk-progress" aria-label="체험 진행 순서">
-          {visiblePhases.map((label) => <li key={label} aria-current={phases[phase] === label ? 'step' : undefined}>{label}</li>)}
-        </ol>
-      )}
-      {step < done && <p className="mission"><strong>미션</strong> {mission}</p>}
+    <PracticeFrame className={branded ? `kiosk-flow ${cinema ? 'kiosk-cinema' : 'kiosk-burger'}` : 'practice-flow'}
+      header={header} step={step} count={done + 1} title={title} guide={guide} footer={footer}
+      learning={learning} context={order} reviewing={step === review} completed={step === done}>
       {step === done && <div className="success-icon" aria-hidden="true">✓</div>}
-      <h1 ref={heading} tabIndex={-1}>{title}</h1>
 
       {cinema && step === 1 && (
         <div className="summary show-date">
@@ -268,45 +236,8 @@ export default function Practice({ kiosk, onExit }) {
           <p className="notice">실제 결제는 없습니다</p>
         </div>
       )}
-      {step === review && (issue || branded) && (
-        <section className="mission feedback">
-          <h2>미션 확인</h2>
-          {issue ? <>
-            <p>{issue.title}에서 <strong>{issue.picked}</strong>을(를) 골랐어요.</p>
-            <p>미션에 맞게 <strong>{issue.target}</strong>을(를) 골라 보세요.</p>
-          </> : <p>미션에 맞게 선택했어요. {order.method} 연습도 마쳤어요.</p>}
-        </section>
-      )}
-      {step === done && <p className="success-banner">✓ 미션을 완료했어요</p>}
+      {step === done && <p className="success-banner">✓ 연습을 완료했어요</p>}
 
-      <LearningAssistant learning={learning} step={step} title={title} guide={help}
-        context={{ mission, order, differences: changes }} reviewing={step === review} completed={step === done} />
-      {step < payment && <button className="primary" disabled={!canAdvance} onClick={advance}>{retry ? '선택 수정하기' : '다음'}</button>}
-      {step === payment && <button className="primary" onClick={() => branded && retry ? advance() : setStep(branded ? checkout : review)}>
-        {branded ? (retry ? '선택 수정하기' : '결제로 이동') : '카드 넣기 연습'}
-      </button>}
-      {branded && step === checkout && <button className="primary" disabled={!order.method} onClick={() => setStep(review)}>모의 결제</button>}
-      {step === review && (
-        <button className="primary" onClick={() => {
-          if (issue) {
-            setRetry(order);
-            setStep(issue.step);
-          } else {
-            setStep(done);
-          }
-        }}>{issue ? '이 단계 다시 연습하기' : '완료하기'}</button>
-      )}
-      <button className="back" onClick={() => {
-        if (retry) {
-          setOrder(retry);
-          setRetry(false);
-          setStep(review);
-        } else if (step > 0 && step < review) {
-          setStep(single && step === payment ? 2 : step - 1);
-        } else {
-          onExit();
-        }
-      }}>{retry ? '수정 취소' : step > 0 && step < review ? '이전 단계' : '다른 키오스크 연습하기'}</button>
-    </div>
+    </PracticeFrame>
   );
 }
