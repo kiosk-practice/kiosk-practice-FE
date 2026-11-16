@@ -108,10 +108,9 @@ button:focus-visible { outline: 3px solid #5944a6; outline-offset: 3px; }
 .panel--selected .primary { margin-top: 0; }
 .panel--selected h1:has(+ .summary) { margin-top: 8px; }
 .practice-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 17px; }
-.practice-header span, .screen-label { background: #f4f1fa; padding: 6px 12px; border-radius: 10px; font-weight: 750; }
-.mission, .help p { background: var(--yellow); border-radius: 14px; padding: 12px; text-align: left; line-height: 1.5; font-size: 17px; }
-.mission { margin: 0; }
-.mission > strong { color: #832234; margin-right: 4px; }
+.screen-label { background: #f4f1fa; padding: 6px 12px; border-radius: 10px; font-weight: 750; }
+.feedback, .help p { background: var(--yellow); border-radius: 14px; padding: 12px; text-align: left; line-height: 1.5; font-size: 17px; }
+.feedback { margin: 0; }
 .option {
   display: flex;
   align-items: center;
@@ -166,26 +165,6 @@ button:disabled { cursor: default; opacity: .55; }
 .kiosk-burger .practice-header { background: #a81a2b; color: white; }
 .kiosk-burger .practice-header strong::before { content: 'M'; color: #ffc928; font-weight: 900; margin-right: 9px; }
 .kiosk-cinema .practice-header { border-bottom: 2px solid #eee5e8; color: #a81a2b; }
-.kiosk-flow .practice-header span { background: #fff2b8; color: #231a15; font-size: 15px; }
-.kiosk-progress {
-  display: flex;
-  list-style: none;
-  padding: 0 0 8px;
-  margin: 0;
-  gap: 4px;
-  border-bottom: 1px solid #e9e0e3;
-}
-.kiosk-progress li {
-  flex: 1;
-  display: grid;
-  place-items: center;
-  padding: 5px 2px;
-  border-radius: 6px;
-  background: #f4f1f2;
-  font-size: 12px;
-  font-weight: 700;
-}
-.kiosk-progress [aria-current="step"] { background: var(--cherry); color: white; }
 .burger-menu, .showtimes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .burger-menu .option { position: relative; flex-direction: column; align-items: start; gap: 4px; font-size: 18px; padding: 8px; }
 .burger-menu img { width: 100%; height: 78px; object-fit: contain; }
@@ -221,3 +200,24 @@ button:disabled { cursor: default; opacity: .55; }
 .booking-details dt { font-weight: 800; }
 .booking-details dd { margin: 0; }
 .kiosk-total { display: block; border-top: 1px solid #eee1e5; padding-top: 10px; margin-top: 10px; color: var(--cherry); text-align: right; }
+
+.panel--selected { width: min(100%, 460px); border-width: 2px; min-height: min(760px, calc(100svh - 20px)); padding: 0; overflow: hidden; }
+.practice-frame { display: flex; flex: 1; flex-direction: column; gap: 0; width: 100%; }
+.practice-frame > header { min-height: 76px; padding: 12px 16px; border-radius: 0; }
+.practice-badge { background: var(--yellow); color: #231a15; border-radius: 20px; padding: 4px 11px; font-size: 15px; font-weight: 800; white-space: nowrap; }
+.frame-progress, .frame-title, .frame-content, .frame-footer { padding-inline: 16px; }
+.frame-progress { display: flex; align-items: center; gap: 12px; padding-block: 12px; font-size: 15px; font-weight: 800; }
+.frame-progress span { white-space: nowrap; }
+.frame-progress progress { flex: 1; min-width: 0; accent-color: var(--red, var(--cherry)); }
+.frame-title { text-align: center; padding-block: 4px 12px; }
+.panel--selected .frame-title h1 { margin: 0; font-size: clamp(24px, 6.5vw, 30px); line-height: 1.35; }
+.frame-content { display: flex; flex: 1; flex-direction: column; gap: 12px; padding-bottom: 16px; }
+.frame-guide { margin: 0; border-radius: 12px; background: var(--yellow); padding: 12px; text-align: left; font-size: 17px; line-height: 1.45; }
+.frame-guide strong { display: block; margin-bottom: 3px; }
+.frame-ai-button { align-self: flex-end; min-height: 44px; padding: 6px 12px; border: 1px solid #d8d4e8; border-radius: 12px; background: #f4f1fa; color: #493887; font-size: 16px; }
+.frame-content .menu-tabs { margin-top: 0; }
+.frame-footer { display: flex; gap: 10px; padding-bottom: 16px; }
+.frame-footer:empty { display: none; }
+.frame-footer > button { flex: 1; min-width: 0; min-height: 60px; border-radius: 12px; }
+.frame-footer > .back { align-self: stretch; margin: 0; padding: 8px; border: 1px solid #ccc9d2; border-radius: 12px; text-decoration: none; }
+.frame-footer > .primary { font-size: clamp(18px, 4.8vw, 23px); border-radius: 12px; }
