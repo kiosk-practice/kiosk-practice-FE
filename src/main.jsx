@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import artwork from './artwork.js';
+import bori from './assets/helper-bird.png';
 import './styles.css';
 
 import { kiosks } from './kiosks.js';
@@ -21,13 +22,15 @@ function App() {
     <main className={`panel panel--${screen}`}>
       {screen === 'home' ? (
         <>
-          <h1>AI 키오스크<br />체험</h1>
-          <img className="hero" src={artwork[0]} alt="" />
-          <button className="primary" onClick={() => setScreen('choose')}>
-            체험 시작하기 <span className="arrow" aria-hidden="true" />
+          <h1 ref={heading} tabIndex={-1}><span>보리와 함께</span><br />키오스크 연습</h1>
+          <div className="home-companion">
+            <img className="home-bori" src={bori} alt="반갑게 인사하는 보리" />
+          </div>
+          <button className="primary home-start" onClick={() => setScreen('choose')}>
+            시작하기 <span className="arrow" aria-hidden="true" />
           </button>
-          <p className="notice">실제 결제는 없습니다</p>
-          <button className="back" onClick={() => setScreen('report')}>나의 학습 리포트</button>
+          <p className="home-reassurance">실제 결제는 없어요</p>
+          <button className="back home-history" onClick={() => setScreen('report')}>지난 연습 보기</button>
         </>
       ) : screen === 'report' ? <LearningReport onBack={() => setScreen('home')} /> : screen === 'choose' ? (
         <>

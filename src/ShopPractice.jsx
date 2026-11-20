@@ -38,7 +38,7 @@ export function CafePractice({ onExit, onHome }) {
   const filtered = drinks.filter((item) => category === '추천' ? [0, 1, 10].includes(item.id) : item.category === category);
   const titles = ['원하는 메뉴를 선택하세요', '옵션 선택', '수량 선택', '장바구니', '결제하기', '주문 확인', '주문 내역 돌아보기', '연습 완료'];
   const learning = useLearning('메가커피', step, titles[step], step === 6, step === 7);
-  const guides = ['메뉴판에서 원하는 상품을 누르고 다음으로 이동하세요.', '음료의 온도를 고르고 다음을 누르세요.', '수량을 확인하고 장바구니에 담으세요.', '주문 내역을 확인하고 결제하기를 누르세요.', '연습할 결제 수단을 선택하세요.', '주문 내용이 맞으면 결제하기(연습)를 누르세요.', '선택한 내용을 순서대로 돌아보세요.'];
+  const guides = ['마시고 싶은 음료나 디저트를 눌러주세요.', '따뜻하게 드실지, 차갑게 드실지 골라주세요.', '수량을 확인하고 장바구니에 담으세요.', '주문 내역을 확인하고 결제하기를 누르세요.', '연습할 결제 수단을 선택하세요.', '주문 내용이 맞으면 결제하기(연습)를 누르세요.', '선택한 내용을 순서대로 돌아보세요.'];
   function restart() { learning.reset(); setStep(0); setCart([]); setSelected(null); setTemperature(''); setQuantity(1); setPayment(''); setCategory('커피'); setPage(0); }
   function choose(product) { setSelected(product); setTemperature(product.category === '디저트' ? '기본' : ''); setQuantity(1); }
   const rows = (editable) => <div className="shop-receipt"><div className="receipt-head"><span>주문내역</span><span>수량 / 금액</span></div>{cart.map((item) => <div className="cart-row" key={item.key}><Drink product={item} /><strong>{item.name}<small>({item.temperature})</small></strong>{editable ? <Counter label={`${item.name} ${item.temperature} 수량`} value={item.quantity} max={99} onChange={(value) => setCart(cart.map((row) => row.key === item.key ? { ...row, quantity: value } : row))} /> : <span>{item.quantity}개</span>}<b>{won(item.price * item.quantity)}</b>{editable && <button className="remove-item" aria-label={`${item.name} ${item.temperature} 삭제`} onClick={() => setCart(cart.filter((row) => row.key !== item.key))}>×</button>}</div>)}</div>;
@@ -91,7 +91,7 @@ export function DaisoPractice({ onExit, onHome }) {
   let footer;
   if (step === 0) footer = <><Button secondary onClick={onHome}>⌂ 처음으로</Button><Button onClick={() => setStep(1)}>바코드 스캔 시작 ❯</Button></>;
   if (step === 1) footer = <><Button secondary onClick={() => setStep(0)}>‹ 이전</Button><Button disabled={scanned.length !== 3} onClick={() => setStep(2)}>다음 ❯</Button></>;
-  if (step === 2) footer = <><Button secondary onClick={() => { setMessage(''); setStep(3); }}>아니요<br />(수정할게요)</Button><Button onClick={() => corrected ? setStep(4) : setMessage('실제 상품과 스캔 수량이 달라요. ‘아니요’를 눌러 수정해 주세요.')}>네, 같아요</Button></>;
+  if (step === 2) footer = <><Button secondary data-help-target={!corrected || undefined} onClick={() => { setMessage(''); setStep(3); }}>아니요<br />(수정할게요)</Button><Button onClick={() => corrected ? setStep(4) : setMessage('실제 상품과 스캔 수량이 달라요. ‘아니요’를 눌러 수정해 주세요.')}>네, 같아요</Button></>;
   if (step === 3) footer = <><Button secondary onClick={() => setStep(2)}>‹ 이전</Button><Button disabled={!corrected} onClick={() => setStep(4)}>수정 완료하고 다음 ❯</Button></>;
   if (step === 4) footer = <><Button secondary onClick={() => setStep(3)}>‹ 이전</Button><Button disabled={!bag} onClick={() => setStep(5)}>다음 (결제하기) ❯</Button></>;
   if (step === 5) footer = <><Button secondary disabled={paying} onClick={() => setStep(4)}>‹ 이전</Button><Button disabled={paying} onClick={() => setPaying(true)}>{paying ? '결제 연습 중…' : '카드 넣기 (연습)'}</Button></>;

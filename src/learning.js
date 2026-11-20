@@ -1,6 +1,14 @@
 export const HISTORY_KEY = 'kiosk-learning-v1';
 export const MAX_HISTORY = 20;
 
+export function getHelpGuidance(root, guide) {
+  const correction = root?.querySelector('[data-help-target="true"]:not(:disabled)');
+  const next = root?.querySelector('.frame-footer .shop-button:not(.secondary):not(:disabled), .frame-footer .primary:not(:disabled)');
+  const target = correction || next || root?.querySelector('.menu-grid, .temperature-options, .payment-options, .bag-options, .scan-products, .goods-list:has(button), .choices, .ticket-list, .seats');
+  const label = (correction || next)?.textContent.trim().replace(/[❯‹🛒]/gu, '').trim();
+  return { target, text: label ? `아래의 ‘${label}’ 버튼을 눌러주세요.` : guide };
+}
+
 export function createSession(brand) {
   return { id: crypto.randomUUID(), brand, completedAt: null, stages: [] };
 }

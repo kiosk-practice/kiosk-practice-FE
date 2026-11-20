@@ -59,3 +59,25 @@ test('returns generated answer and caps local AI calls per minute', async () => 
   for (let i = 0; i < 20; i++) assert.equal((await invoke(handler)).status, 200);
   assert.equal((await invoke(handler)).status, 429);
 });
+
+test('reports actionable failure categories without exposing provider errors or keys', async () => {
+  for (const [status, code, expected] of [[401, 'invalid_api_key', 'authentication'], [429, 'insufficient_quota', 'quota'], [429, 'rate_limit_exceeded', 'rate_limit'], [403, 'forbidden', 'permission'], [404, 'model_not_found', 'model'], [500, 'server_error', 'upstream']]) {
+    const handler = createAiMiddleware({ apiKey: 'secret', fetchImpl: async () => ({ ok: false, status, json: async () => ({ error: { code, message: 'private secret details' } }) }) });
+    const result = await invoke(handler);
+    assert.equal(result.status, 502);
+    assert.deepEqual(result.body, { error: expected });
+  }
+  const timeout = createAiMiddleware({ apiKey: 'secret', fetchImpl: async () => { throw Object.assign(new Error('private'), { name: 'TimeoutError' }); } });
+  assert.equal((await invoke(timeout)).body.error, 'timeout');
+});
+
+test('billing 429 codes and quota types are not mistaken for temporary traffic limits', async () => {
+  for (const error of [
+    { code: 'credit_balance_exhausted' }, { code: 'organization_usage_limit_exceeded' },
+    { code: 'organization_spend_limit_exceeded' }, { code: 'project_spend_limit_exceeded' },
+    { type: 'insufficient_quota', code: null },
+  ]) {
+    const handler = createAiMiddleware({ apiKey: 'test', fetchImpl: async () => ({ ok: false, status: 429, json: async () => ({ error }) }) });
+    assert.deepEqual((await invoke(handler)).body, { error: 'quota' });
+  }
+});
