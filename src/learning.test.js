@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSession, recordStage, summarize, readHistory, saveSession, reportTopics, HISTORY_KEY } from './learning.js';
+import { createSession, recordStage, summarize, readHistory, saveSession, reportTopics, getHelpGuidance, HISTORY_KEY } from './learning.js';
 
 const storage = () => {
   const values = new Map();
@@ -41,4 +41,24 @@ test('corrupt, malformed or unavailable storage does not break the report', () =
   }
   assert.deepEqual(readHistory({ getItem() { throw new Error('disabled'); } }), []);
   assert.throws(() => saveSession({ getItem() {}, setItem() { throw new Error('full'); } }, createSession('카페')));
+});
+
+
+test('guidance moves from choices to the enabled next action and prioritizes correction', () => {
+  const choices = {};
+  const next = { textContent: '다음 ❯' };
+  const correction = { textContent: '아니요 (수정할게요)' };
+  let canAdvance = false;
+  let needsCorrection = false;
+  const root = { querySelector(selector) {
+    if (selector.includes('data-help-target')) return needsCorrection ? correction : null;
+    if (selector.includes('frame-footer')) return canAdvance ? next : null;
+    return choices;
+  } };
+  assert.deepEqual(getHelpGuidance(root, '음료를 눌러주세요.'), { target: choices, text: '음료를 눌러주세요.' });
+  canAdvance = true;
+  assert.deepEqual(getHelpGuidance(root, '음료를 눌러주세요.'), { target: next, text: '아래의 ‘다음’ 버튼을 눌러주세요.' });
+  needsCorrection = true;
+  assert.equal(getHelpGuidance(root, '').target, correction);
+  assert.equal(getHelpGuidance(null, '안내').text, '안내');
 });

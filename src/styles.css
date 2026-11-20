@@ -29,12 +29,17 @@ h1 {
   letter-spacing: -.045em;
   font-weight: 850;
 }
-.panel--home h1 { font-size: clamp(38px, 10vw, 54px); }
-.hero {
-  width: min(100%, 335px);
-  align-self: center;
-  margin: auto 0 18px;
-}
+/* The welcome screen shares Bori's warm colors without changing kiosk brands. */
+.panel--home { width: min(100%, 480px); padding: 40px 28px 20px; border-color: #e7e4d8; background: #fffcf5; border-radius: 28px; color: #293e32; }
+.panel--home h1 { margin: 0; font-size: clamp(32px, 8vw, 40px); line-height: 1.4; letter-spacing: -.04em; word-break: keep-all; }
+.panel--home h1 span { color: #536451; font-size: .65em; font-weight: 650; letter-spacing: -.02em; }
+.home-companion { position: relative; display: flex; flex-direction: column; align-items: center; padding: 24px 0 30px; margin: auto 0; }
+.home-bori { position: relative; width: 240px; height: 240px; object-fit: contain; }
+.home-reassurance { margin: 12px 0 0; color: #486144; font-size: 17px; line-height: 1.5; word-break: keep-all; }
+.panel--home .home-start { min-height: 66px; background: #315f43; border-radius: 16px; font-size: clamp(20px, 5vw, 24px); }
+.panel--home .home-start:hover { background: #244b33; }
+.panel--home .home-history { margin-top: 8px; background: transparent; color: #596253; font-size: 17px; }
+@media (max-width: 360px) { .panel--home { padding: 24px 16px 16px; } .home-bori { width: 190px; height: 190px; } }
 button {
   font: inherit;
   font-weight: 800;
@@ -220,3 +225,5 @@ button:disabled { cursor: default; opacity: .55; }
 .frame-footer > button { flex: 1; min-width: 0; min-height: 60px; border-radius: 12px; }
 .frame-footer > .back { align-self: stretch; margin: 0; padding: 8px; border: 1px solid #ccc9d2; border-radius: 12px; text-decoration: none; }
 .frame-footer > .primary { font-size: clamp(18px, 4.8vw, 23px); border-radius: 12px; }
+
+.panel--home h1:focus { outline: none; }

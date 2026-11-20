@@ -14,7 +14,6 @@ export default function PracticeFrame({ className, header, step, count, title, g
       </div>
       <div className="frame-title"><h1 ref={heading} tabIndex={-1}>{title}</h1></div>
       <div className="frame-content">
-        {guide && <p className="frame-guide"><strong>단계 안내</strong> {guide}</p>}
         <LearningAssistant learning={learning} step={step} title={title} guide={guide}
           context={context} reviewing={reviewing} completed={completed} />
         {children}

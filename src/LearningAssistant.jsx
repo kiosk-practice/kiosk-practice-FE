@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { createSession, recordStage, summarize, readHistory, saveSession, reportTopics, HISTORY_KEY } from './learning.js';
+import { createSession, recordStage, summarize, readHistory, saveSession, reportTopics, getHelpGuidance, HISTORY_KEY } from './learning.js';
 import './learning.css';
+import helperBird from './assets/helper-bird.png';
+
+const AI_NOTICE_KEY = 'kiosk-ai-notice-v1';
 
 export function useLearning(brand, step, title, reviewing, completed) {
   const root = useRef(null);
@@ -40,61 +43,32 @@ export function useLearning(brand, step, title, reviewing, completed) {
 
 export default function LearningAssistant({ learning, step, title, guide, context, reviewing = false, completed = false }) {
   const [open, setOpen] = useState(false);
-  const [inspect, setInspect] = useState(false);
-  const [idle, setIdle] = useState(false);
+  const [showNotice, setShowNotice] = useState(() => {
+    try { return localStorage.getItem(AI_NOTICE_KEY) !== 'seen'; } catch { return true; }
+  });
   const [answer, setAnswer] = useState('');
   const [status, setStatus] = useState('');
-  const [button, setButton] = useState('');
+  const [instruction, setInstruction] = useState('');
   const controller = useRef(null);
-  const highlight = useRef(null);
-  const panel = useRef(null);
-  const trigger = useRef(null);
   const contextKey = JSON.stringify(context);
-  const summary = summarize(learning.session);
-  const fallback = reviewing || completed
-    ? `지금까지 ${learning.session.stages.length}개 단계를 연습했고 도움말을 ${summary.helps}번 요청했어요. ${summary.recommendation ? `다음에는 ‘${summary.recommendation}’ 단계를 한 번 더 연습해 보세요.` : ''}`
-    : guide;
-  function clearHighlight() { highlight.current?.classList.remove('learning-highlight'); highlight.current = null; }
+  const resultView = reviewing || completed;
+  const fallback = resultView ? '여기까지 잘 따라오셨어요. 아래에서 이번에 선택한 내용을 확인해 보세요.' : guide;
+
   useEffect(() => {
-    controller.current?.abort(); controller.current = null;
-    setAnswer(''); setStatus(''); clearHighlight();
-  }, [contextKey]);
+    setAnswer(''); setStatus('');
+    return () => { controller.current?.abort(); controller.current = null; };
+  }, [step, contextKey, learning.version]);
+  useEffect(() => { setOpen(false); }, [learning.version]);
   useEffect(() => {
-    setOpen(false); setInspect(false); setIdle(false); setAnswer(''); setStatus(''); setButton('');
-    return () => { controller.current?.abort(); controller.current = null; clearHighlight(); };
-  }, [step, learning.version]);
-  useEffect(() => {
-    if (reviewing || completed) return;
-    let timer;
-    const root = learning.root.current;
-    function schedule() {
-      clearTimeout(timer);
-      setIdle(false);
-      if (!document.hidden) timer = setTimeout(() => setIdle(true), 30000);
-    }
-    schedule();
-    root?.addEventListener('pointerdown', schedule);
-    root?.addEventListener('keydown', schedule);
-    document.addEventListener('visibilitychange', schedule);
-    return () => { clearTimeout(timer); root?.removeEventListener('pointerdown', schedule); root?.removeEventListener('keydown', schedule); document.removeEventListener('visibilitychange', schedule); };
-  }, [step, reviewing, completed, learning.version]);
-  useEffect(() => {
-    if (!inspect) return;
-    const root = learning.root.current;
-    function explain(event) {
-      const target = event.target.closest('button');
-      if (!target || target.closest('.learning-assistant')) return;
-      event.preventDefault(); event.stopPropagation();
-      const label = (target.getAttribute('aria-label') || target.textContent).trim().slice(0, 200);
-      setButton(label); setInspect(false); setOpen(true); setAnswer(''); setStatus('');
-    }
-    root?.addEventListener('click', explain, true);
-    return () => root?.removeEventListener('click', explain, true);
-  }, [inspect]);
-  useEffect(() => { if (open) panel.current?.focus(); }, [open]);
+    if (!open || resultView) return;
+    const { target, text } = getHelpGuidance(learning.root.current, guide);
+    setInstruction(text);
+    target?.classList.add('learning-highlight');
+    return () => target?.classList.remove('learning-highlight');
+  }, [open, step, contextKey, guide, resultView, learning.version]);
+  useEffect(() => () => { controller.current?.abort(); controller.current = null; }, []);
 
   async function request() {
-    controller.current?.abort();
     const requestController = new AbortController();
     controller.current = requestController;
     const timer = setTimeout(() => requestController.abort(), 20000);
@@ -102,64 +76,42 @@ export default function LearningAssistant({ learning, step, title, guide, contex
     const controls = [...(learning.root.current?.querySelectorAll('button:not(:disabled)') ?? [])]
       .filter((node) => !node.closest('.learning-assistant'))
       .slice(0, 40).map((node) => (node.getAttribute('aria-label') || node.textContent).trim().slice(0, 150));
+    const nextGuide = resultView ? fallback : getHelpGuidance(learning.root.current, guide).text;
     try {
       const response = await fetch('/api/ai', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: requestController.signal,
-        body: JSON.stringify({ kind: reviewing || completed ? 'feedback' : 'help', brand: learning.session.brand,
-          title, guide, ...(button ? { button } : {}),
+        body: JSON.stringify({ kind: resultView ? 'feedback' : 'help', brand: learning.session.brand,
+          title, guide: nextGuide,
           context: JSON.stringify({ selections: context, controls, stages: learning.session.stages }).slice(0, 10000) }),
       });
       const result = await response.json();
-      if (!response.ok || typeof result.answer !== 'string' || !result.answer.trim()) throw new Error(result.error || 'unavailable');
+      if (!response.ok || typeof result.answer !== 'string' || !result.answer.trim()) throw new Error('unavailable');
       if (controller.current !== requestController) return;
       setAnswer(result.answer); setStatus('success');
-    } catch (error) {
-      if (controller.current !== requestController) return;
-      setStatus(error.message === 'unconfigured' ? 'unconfigured' : 'error');
+    } catch {
+      if (controller.current === requestController) setStatus('error');
     } finally { clearTimeout(timer); }
   }
   function close() {
     controller.current?.abort(); controller.current = null;
-    setOpen(false); setInspect(false); setStatus(''); trigger.current?.focus();
+    setOpen(false); setAnswer(''); setStatus('');
   }
-  function follow() {
-    close();
-    const root = learning.root.current;
-    const next = root?.querySelector('.frame-footer .shop-button:not(.secondary):not(:disabled), .primary:not(:disabled)');
-    const choices = root?.querySelector('.menu-grid, .temperature-options, .large-counter, .payment-options, .bag-options, .scan-products, .goods-list, .choices, .ticket-list, .seats');
-    clearHighlight();
-    const target = next || choices;
-    if (target) {
-      highlight.current = target; target.classList.add('learning-highlight');
-      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      (target.matches('button') ? target : target.querySelector('button:not(:disabled)'))?.focus();
-    }
-    setOpen(false);
-  }
-  const resultView = reviewing || completed;
-  return <aside className="learning-assistant" aria-label="학습 도우미">
-    {resultView && <section className="learning-summary">
-      <h2>오늘의 학습 리포트</h2>
-      <div className="learning-stats"><span><b>{summary.seconds}초</b>화면에서 연습</span><span><b>{summary.helps}회</b>도움 요청</span></div>
-      {summary.longest && <p>가장 오래 연습한 단계: {summary.longest.title} ({Math.round(summary.longest.ms / 1000)}초)</p>}
-      <p>{fallback}</p>
-      <p className="learning-note">시간은 화면이 보이는 동안만 기록해요. 오래 걸려도 괜찮아요.</p>
-      {learning.storageError && <p role="status">{learning.storageError}</p>}
-    </section>}
-    {idle && !open && !resultView && <p role="status">천천히 해도 괜찮아요. 막히면 도움말을 눌러보세요.</p>}
-    <button ref={trigger} className="learning-toggle" aria-expanded={open} onClick={() => { if (open) close(); else { setOpen(true); setIdle(false); if (!resultView) learning.help(); } }}>
-      <span aria-hidden="true">🤖</span> {resultView ? 'AI 학습 피드백' : 'AI에게 물어보기'}
-    </button>
-    {inspect && <p role="status">궁금한 버튼을 눌러주세요. 설명할 버튼만 선택되며 주문은 바뀌지 않아요. <button onClick={() => setInspect(false)}>설명 선택 취소</button></p>}
-    {open && <section ref={panel} tabIndex={-1} className="learning-panel" aria-label={resultView ? '학습 피드백' : '현재 화면 도움말'} onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
-      <div className="learning-heading"><h2>{resultView ? '연습을 돌아봐요' : '차근차근 도와드려요'}</h2><button aria-label="도움말 닫기" onClick={close}>×</button></div>
-      {button && <p className="learning-question">‘{button}’ 버튼은 무엇인가요?</p>}
-      <p className="learning-answer" aria-live="polite">{status === 'loading' ? 'AI가 설명을 준비하고 있어요…' : answer || fallback}</p>
-      <p className="learning-note">{status === 'success' ? 'AI가 생성한 설명이에요. 실제 화면과 함께 확인해 주세요.' : status === 'unconfigured' ? 'AI 연결을 준비 중이에요. 지금은 기본 안내를 보여드려요.' : status === 'error' ? 'AI에 연결하지 못했어요. 기본 안내로 계속 연습할 수 있어요.' : '기본 안내'}</p>
-      <p className="learning-note">AI 설명을 요청하면 현재 선택과 연습 기록을 OpenAI에 전송해요. 이름이나 카드 정보는 입력하지 않아요.</p>
-      <button disabled={status === 'loading'} onClick={request}>{status === 'error' ? 'AI 다시 요청하기' : 'AI 설명 요청하기'}</button>
-      {!resultView && <div className="learning-actions"><button onClick={() => { close(); setInspect(true); }}>궁금한 버튼 고르기</button><button onClick={follow}>같이 따라해보기</button></div>}
-    </section>}
+  return <aside className={`learning-assistant${open ? ' is-guiding' : ''}`} aria-label="연습 안내"
+    onKeyDown={(event) => { if (event.key === 'Escape') close(); }}>
+    <div className="learning-heading"><div className="learning-companion"><img src={helperBird} className="learning-mascot" alt="" /><div><span className="learning-name">보리</span><span className="learning-eyebrow">{resultView ? '정말 잘하셨어요!' : open ? '제가 옆에서 도와드릴게요' : '천천히, 함께 해요'}</span></div></div>
+      <button className="learning-toggle" aria-expanded={open} onClick={() => {
+        if (open) close();
+        else {
+          setShowNotice(false);
+          try { localStorage.setItem(AI_NOTICE_KEY, 'seen'); } catch { /* Storage is optional; keep helping. */ }
+          setOpen(true); if (!resultView) learning.help(); request();
+        }
+      }}>{open ? '안내 접기' : resultView ? '연습 돌아보기' : '도와주세요'}<span aria-hidden="true">{open ? ' −' : ' ?'}</span></button>
+    </div>
+    <p className="learning-answer" aria-live="polite">{open ? answer || (resultView ? fallback : instruction || guide) : fallback}</p>
+    {open && <p className="learning-note" role="status">{status === 'loading' ? '안내대로 시작해 보세요. AI도 설명을 준비하고 있어요.' : status === 'error' ? '지금은 기본 안내로 도와드릴게요.' : status === 'success' ? 'AI가 도와드리는 안내예요.' : resultView ? '천천히 확인해 보세요.' : '테두리로 표시한 곳을 확인해 주세요.'}</p>}
+    {showNotice && <small className="learning-privacy">처음 한 번 안내드려요. 도움을 누르면 선택 내용과 연습 기록이 OpenAI에 전송돼요.</small>}
+    {learning.storageError && <p role="status">{learning.storageError}</p>}
   </aside>;
 }
 
