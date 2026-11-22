@@ -106,7 +106,7 @@ export default function LearningAssistant({ learning, step, title, guide, contex
           try { localStorage.setItem(AI_NOTICE_KEY, 'seen'); } catch { /* Storage is optional; keep helping. */ }
           setOpen(true); if (!resultView) learning.help(); request();
         }
-      }}>{open ? '안내 접기' : resultView ? '연습 돌아보기' : '도와주세요'}<span aria-hidden="true">{open ? ' −' : ' ?'}</span></button>
+      }}>{open ? '안내 접기' : resultView ? '연습 돌아보기' : '도와주세요'}<span aria-hidden="true">{open ? ' −' : ' !'}</span></button>
     </div>
     <p className="learning-answer" aria-live="polite">{open ? answer || (resultView ? fallback : instruction || guide) : fallback}</p>
     {open && <p className="learning-note" role="status">{status === 'loading' ? '안내대로 시작해 보세요. AI도 설명을 준비하고 있어요.' : status === 'error' ? '지금은 기본 안내로 도와드릴게요.' : status === 'success' ? 'AI가 도와드리는 안내예요.' : resultView ? '천천히 확인해 보세요.' : '테두리로 표시한 곳을 확인해 주세요.'}</p>}
