@@ -39,6 +39,18 @@ npm run dev -- --host 127.0.0.1 --port 5174
 
 서버의 `/api/ai`가 [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create)를 호출합니다. 키는 Vite의 브라우저 환경변수(`VITE_*`)로 노출하지 않습니다. 요청은 현재 선택과 화면 버튼, 단계 기록만 포함하며 `store: false`로 전송합니다. 입력 크기·형식·출처 검사, 서버 전체 분당 20회·동시 2회 제한, 15초 상위 API 제한을 적용합니다.
 
-개발 서버와 `npm run preview -- --host 127.0.0.1`에 같은 API 미들웨어가 연결됩니다. **현재 서버는 로컬 실행용입니다.** 정적 `dist`만 배포하면 AI API는 동작하지 않습니다. 공개 서비스 배포 시 별도 서버에서 이 미들웨어를 제공하고 인증과 사용자별 비용 제한을 추가해야 합니다. API 키가 연결되면 OpenAI 사용 요금이 발생합니다.
+개발 서버와 `npm run preview -- --host 127.0.0.1`, Cloudflare Worker에 같은 API 미들웨어가 연결됩니다. 정적 `dist`만 배포하면 AI API는 동작하지 않습니다. API 키가 연결되면 OpenAI 사용 요금이 발생합니다.
+
+### Cloudflare Workers 배포
+
+- Worker 이름: `kiosk-practice-fe` (`wrangler.jsonc`의 이름과 일치)
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/` (이 저장소의 `package.json` 위치)
+- Worker의 **Settings → Variables and Secrets**에 `OPENAI_API_KEY`를 **Secret**으로 등록하고 Deploy합니다. 빌드 환경변수만 설정하면 실행 중인 API에서 사용할 수 없습니다. `OPENAI_MODEL`은 선택 사항이며 기본값은 `gpt-4.1-mini`입니다.
+
+`server/worker.js`가 `/api/ai` 요청을 기존 AI 미들웨어에 전달하고, 나머지 화면은 `dist`에서 제공합니다. `/api/*`는 정적 파일보다 Worker가 먼저 처리하도록 설정했습니다. API 키를 브라우저 변수(`VITE_*`)나 Git에 넣지 마세요.
+
+검증 시 `/api/ai`에 올바른 JSON을 POST하면 AI 답변이 나옵니다. 키가 없으면 `503`과 `unconfigured`, GET 요청은 의도적으로 `405`를 반환합니다. Workers의 분당 20회·동시 2회 제한은 실행 인스턴스별이며 서비스 전체 비용 상한이 아닙니다. 공개 서비스 운영에는 인증과 사용자별·공유 비용 제한이 추가로 필요합니다.
 
 검증: `npm test`는 기존 주문 계산·좌석 테스트와 학습 기록 누적/손상/저장 제한, AI 요청 검증·성공·실패·호출 제한을 확인합니다. 실제 OpenAI 호출은 키가 있는 환경에서 별도로 확인해야 합니다.

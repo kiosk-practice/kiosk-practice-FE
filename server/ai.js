@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 const text = (value, max) => typeof value === 'string' && value.length > 0 && value.length <= max;
 
 export function validRequest(data) {
